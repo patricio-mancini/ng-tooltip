@@ -1,0 +1,88 @@
+@function map-merge-deep($parent-map, $child-map) {
+	$result: $parent-map;
+	@each $key, $value in $child-map {
+		@if (not map-has-key($result, $key)) or (type-of(map-get($result, $key)) != type-of($value)) or (not (type-of(map-get($result, $key)) == map and type-of($value) == map)) {
+			$result: map-merge($result, ($key: $value));
+		}
+		@else {
+			$result: map-merge($result, ($key: map-merge-deep(map-get($result, $key), $value)));
+		}
+	}
+	@return $result;
+}
+
+@mixin app-an-template($name, $event, $config, $modifiers) {
+  @each $suffix in $event {
+    &.animate-#{$suffix} {
+      animation: app-an-#{$name}-#{$suffix} #{map-get($modifiers, $suffix)};
+    }
+    @at-root {
+      @keyframes app-an-#{$name}-#{$suffix} {
+        @each $percent, $props in map-get($config, $suffix) {
+          #{$percent}#{'%'} { 
+            @each $prop, $value in $props {
+              #{$prop}: $value;
+            }
+          }
+        } 
+      }
+    }
+  }
+}
+@mixin app-an-opacityChange($event: (in out), $config: (), $modifiers: ()) {
+  $defaultConfig: (
+    in: (
+      0: (
+        opacity: 0
+      ),
+      100: (
+        opacity: 1
+      )
+    ),
+    out: (
+      0: (
+        opacity: 1
+      ),
+      100: (
+        opacity: 0
+      )
+    )
+  );
+  $defaultModifiers: (
+    in: .35s,
+    out: .35s
+  );
+  $config: map-merge-deep($defaultConfig, $config);
+  $modifiers: map-merge-deep($defaultModifiers, $modifiers);
+  @include app-an-template(opacityChange, $event, $config, $modifiers);
+}
+
+:host {
+  position: absolute;
+  z-index: 5000;
+  .container {
+    position: relative;
+    right: calc(50% - ((16px / 4) * 3));
+    top: 14px;
+    @include app-an-opacityChange($event: ('in'));
+  }
+  .tip {
+    top: -9px;
+    right: calc(50% - (16px / 2));
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 10px solid #1e56a0;
+    position: absolute;
+  }
+  .balloon {
+    background: #1e56a0;
+    padding: .57em .67em;
+    font-size: .65rem;
+    color: white;
+    border-radius: 6px;
+    text-shadow: none;
+    position: relative;
+    text-align: center;
+    white-space: nowrap;
+  }
+}
